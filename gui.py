@@ -67,6 +67,7 @@ class GUI:
         return ["Add Agent"]
 
     def configureGraph(self):
+        self.showLoadingScreen()
         i = 1
         j = 1
         # Setup initial radial dispersion of nodes for force-directed layout
@@ -90,6 +91,7 @@ class GUI:
             x2 = x + self.siteWidth
             y2 = y + self.siteHeight
             node["object"] = self.canvas.create_oval(x1, y1, x2, y2, fill=node["color"], outline="#c0c0c0", activestipple="gray50")
+        self.hideLoadingScreen()
         self.drawEdges()
 
     def configureGraphNames(self):
@@ -117,7 +119,7 @@ class GUI:
         self.configureCanvas()
 
         self.updateSiteDimensions()
-        self.configureGraph()
+        self.delayGraphSetup()
 
         self.window.protocol("WM_DELETE_WINDOW", self.doWindowClose)
         self.window.bind("<Escape>", self.doWindowClose)
@@ -126,6 +128,9 @@ class GUI:
         self.window.bind("<Configure>", self.doResize)
 
         self.doCrossPlatformWindowSizing()
+
+    def delayGraphSetup(self):
+        self.window.after(20, self.configureGraph)  
 
     def destroyCanvas(self):
         self.canvas.destroy()
@@ -193,12 +198,9 @@ class GUI:
         self.doTimestep()
     
     def doForceDirectedLayout(self, steps=50):
-        self.window.withdraw()
         for i in range(steps):
             self.doRepulsion()
             self.doAttraction()
-            #self.window.update_idletasks()
-        self.window.deiconify()
 
     def doPlayButton(self, *args):
         self.trendemic.toggleRun()
@@ -292,18 +294,6 @@ class GUI:
                 edge = self.canvas.create_line(agentX, agentY, neighborX, neighborY, fill="black", width="2")
                 self.edges.append(edge)
 
-   ##dont need this?? 
-    def drawGraph(self):
-        for node in self.nodes:
-            x = node["x"]
-            y = node["y"]
-            x1 = x
-            y1 = y
-            x2 = x + self.siteWidth
-            y2 = y + self.siteHeight
-            self.canvas.coords(node["object"], x1, y1, x2, y2)
-        self.drawEdges()
-
     def findMidpoint(self, node):
         x = node["x"]
         y = node["y"]
@@ -312,6 +302,11 @@ class GUI:
         midpointX = x + (width / 2)
         midpointY = y + (height / 2)
         return (midpointX, midpointY)
+
+    def hideLoadingScreen(self):
+        self.loadingLabel.destroy()
+        self.canvas.grid()  
+        self.window.update_idletasks()
 
     def lookupFillColor(self, agent):
         if agent == None:
@@ -328,6 +323,12 @@ class GUI:
         self.destroyCanvas()
         self.configureCanvas()
         self.configureGraph()
+    
+    def showLoadingScreen(self):
+        self.loadingLabel = tkinter.Label(self.window, text="Loading...", font=("Roboto", 14))
+        self.loadingLabel.grid(row=3, column=0, columnspan=self.menuTrayColumns, sticky="nsew")
+        self.canvas.grid_remove() 
+        self.window.update_idletasks()
 
     def updateLabels(self):
         self.trendemic.updateRuntimeStats()
